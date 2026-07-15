@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start Your Appeal — RV Warranty Bust</title>
+<meta name="description" content="Build your custom RV warranty appeal letter, commissioner complaint, and BBB complaint in minutes.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+  #root{min-height:100vh;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useRef } = React;
+
+
+// ════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════
+const DENIAL_REASONS = [
+  { id: "wear", label: "Wear & Tear", desc: "They said it broke from normal use" },
+  { id: "preexisting", label: "Pre-Existing Condition", desc: "They said the problem was already there" },
+  { id: "not_covered", label: "Not a Covered Part", desc: "They said that part isn't in your plan" },
+  { id: "maintenance", label: "Lack of Maintenance", desc: "They said you didn't maintain it properly" },
+  { id: "unauthorized", label: "No Pre-Authorization", desc: "You got it fixed before they approved it" },
+  { id: "modification", label: "Modification", desc: "They said something you changed caused it" },
+  { id: "other", label: "Other / Not Sure", desc: "Something else or you are not sure" },
+];
+const SCREEN_Q = {
+  not_covered: { q: "Does your written contract specifically list this part as excluded from coverage?", options: [
+    { v: "yes", label: "Yes, I checked and it's clearly listed as excluded", flag: true },
+    { v: "no", label: "No, or I'm not sure — it's not clearly listed", flag: false },
+  ]},
+  maintenance: { q: "Do you have any records or receipts showing you maintained this RV, even informal ones?", options: [
+    { v: "yes", label: "Yes, I have some records", flag: false },
+    { v: "no", label: "No, I don't have any records", flag: true },
+  ]},
+  modification: { q: "Is the modification they mentioned actually related to the part that failed?", options: [
+    { v: "no", label: "No, it's unrelated to what broke", flag: false },
+    { v: "yes", label: "Yes, it's possibly related", flag: true },
+  ]},
+};
+const WARRANTY_COS = ["America's RV Warranty (ARW)","Good Sam Extended Service Plan","National General / Assurant","American Guardian (AGWS)","Wholesale Warranties","Protective Asset Protection","XtraRide by Cornerstone","Coach-Net","Manufacturer Warranty (factory)","Dealer-Sold Warranty","Other / Not Sure"];
+const RV_TYPES = ["Class A Motorhome","Class B Motorhome (Camper Van)","Class C Motorhome","Travel Trailer","Fifth Wheel","Toy Hauler","Pop-Up / Folding Camper","Truck Camper","Park Model","Other"];
+const MOTORIZED = ["Class A Motorhome","Class B Motorhome (Camper Van)","Class C Motorhome"];
+const STATES = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
+const STRONG_LEMON = ["California","Connecticut","Florida","Massachusetts","Minnesota","New Jersey","New York","Texas","Washington","Wisconsin"];
+const C = { navy:"#1b3a5c", amber:"#e8941b", amberDk:"#c67a0e", forest:"#2d5a3d", cream:"#faf8f4", white:"#fff", ch:"#2a2a2a", mu:"#7a7a7a", lAmb:"#fef7eb", lNav:"#eef3f8", lFor:"#eef5f0", danger:"#c53030", dangerBg:"#fef2f2" };
+
+
+function getFilingLinks(state, type) {
+  const s = encodeURIComponent(state || "");
+  if (type === "commissioner") return {
+    label: "File your complaint here:",
+    url: `https://www.google.com/search?q=${s}+department+of+insurance+file+complaint+consumer`,
+    text: `Search: "${state || "Your state"} department of insurance file complaint"`
+  };
+  if (type === "bbb") return {
+    label: "File your BBB complaint here:",
+    url: "https://www.bbb.org/file-a-complaint",
+    text: "Go to bbb.org/file-a-complaint"
+  };
+  if (type === "ag") return {
+    label: "File your Attorney General complaint here:",
+    url: `https://www.google.com/search?q=${s}+attorney+general+consumer+protection+complaint`,
+    text: `Search: "${state || "Your state"} attorney general consumer complaint"`
+  };
+  return null;
+}
+
+function go(setFn, val) { setFn(val); setTimeout(() => window.scrollTo({ top: 0 }), 0); }
+const road = `repeating-linear-gradient(90deg,${C.amber} 0px,${C.amber} 40px,transparent 40px,transparent 80px)`;
+
+function deadlineWarn(d) {
+  if (!d) return null;
+  const m = d.toLowerCase();
+  let days = null;
+  if (m.includes("today") || m.includes("just")) days = 1;
+  else if (m.includes("yesterday")) days = 2;
+  else if (m.includes("week")) { days = (parseInt(m) || 1) * 7; }
+  else if (m.includes("month")) { days = (parseInt(m) || 1) * 30; }
+  else { const p = Date.parse(d); if (!isNaN(p)) days = Math.floor((Date.now() - p) / 864e5); }
+  if (days === null) return { urgent: false, text: "Check your contract for appeal deadlines. Most give you 30 to 180 days from the denial date to file a formal appeal." };
+  if (days > 150) return { urgent: true, text: `It's been about ${days} days since your denial. Your contract likely gives you 30 to 180 days to file a formal appeal. Check your contract for the exact deadline and act today.` };
+  if (days > 90) return { urgent: true, text: `It's been about ${days} days since your denial. Some appeal windows are as short as 90 days. Check your contract and don't wait.` };
+  if (days > 30) return { urgent: false, text: `It's been about ${days} days since your denial. Your contract likely gives you 30 to 180 days to file a formal appeal. You still have time, but the sooner you send your letter the stronger your position.` };
+  return { urgent: false, text: "Good timing. Your appeal window is wide open. Let's get this going." };
+}
+
+function vinCheck(v) {
+  if (!v) return null;
+  const c = v.replace(/[^a-zA-Z0-9]/g, "");
+  if (/[IOQ]/i.test(c)) return { ok: false, msg: "VINs don't contain I, O, or Q" };
+  if (c.length > 0 && c.length < 17) return { ok: false, msg: `${c.length} of 17 characters` };
+  if (c.length > 17) return { ok: false, msg: "Too many characters. VINs are exactly 17." };
+  if (c.length === 17) return { ok: true, msg: "17 characters. Looks right." };
+  return null;
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return iso;
+  return `${m}/${d}/${y}`;
+}
+
+const WEB3FORMS_KEY = "478f9ae1-6bb7-41c6-82cd-a13fabe97716";
+
+async function sendLead2(key, subject, fields) {
+  try {
+    const res = await fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_key: key, subject, ...fields }),
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function sendLead(subject, fields) {
+  try {
+    const res = await fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_key: WEB3FORMS_KEY, subject, ...fields }),
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function coName(d) {
+  if (d.company === "Other / Not Sure") return (d.companyOther && d.companyOther !== "UNKNOWN") ? d.companyOther : "";
+  if (d.company === "Dealer-Sold Warranty") return (d.dealerCompany && d.dealerCompany !== "UNKNOWN") ? d.dealerCompany : "";
+  return d.company || "your warranty company";
+}
+
+function isMotorized(t) { return MOTORIZED.includes(t); }
+
+// ════════════════════════════════════════
+// LETTER GENERATORS
+// ════════════════════════════════════════
+function M(val, placeholder) { return val && val.trim() ? val : `%%${placeholder}%%`; }
+
+function genAppealLetter(d) {
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const co = coName(d) || "";
+  const cn = M(d.contractNum, "YOUR CONTRACT NUMBER");
+  const cl = M(d.claimNum, "YOUR CLAIM NUMBER");
+  const vin = M(d.vin, "YOUR VIN");
+  const dd = M(d.deniedDate, "DATE OF DENIAL");
+  const addr = M(d.address, "YOUR ADDRESS");
+  const ph = M(d.phone, "YOUR PHONE");
+  const em = M(d.email, "YOUR EMAIL");
+  const rv = d.rvYear ? `${d.rvYear} ${d.rvMake || ""} ${d.rvModel || ""}`.trim() : "";
+  const wb = d.whatBroke || "";
+  const isCali = d.state === "California";
+
+  const denialArgs = {
+    wear: `Your company has denied this claim citing "normal wear and tear." I am challenging this determination for the following reasons:
+
+First, under the terms of my service contract, a denial based on wear and tear requires your company to provide credible, documented evidence that the failure was caused by gradual deterioration rather than a sudden mechanical breakdown. A general assumption or opinion that a component "must have" worn out over time does not meet this standard.
+
+Second, the specific failure involved is as follows: ${wb || "[description of failure]"}. This was a mechanical breakdown that occurred during the active coverage period of my contract. The repair facility's diagnostic report confirms this was not cosmetic deterioration but a functional failure of the component.
+
+Third, I am requesting your company provide the specific technical inspection findings, testing data, or expert analysis that supports a wear-and-tear determination. If no such documentation exists, this denial has no evidentiary basis and must be reversed.`,
+
+    preexisting: `Your company has denied this claim citing a "pre-existing condition." I am challenging this determination for the following reasons:
+
+First, under both my service contract and applicable consumer protection law, the burden of proof is on YOUR company to demonstrate — with credible, documented evidence — that this specific defect existed before my coverage began. A general assumption or inference that the problem "must have" been developing prior to coverage is legally insufficient.
+
+Second, the specific failure involved is as follows: ${wb || "[description of failure]"}. This failure manifested during the active coverage period. I have attached documentation showing the condition of my RV at the time coverage began, which contradicts your pre-existing condition determination.
+
+Third, if your company conducted an inspection that identified this condition as pre-existing, I am requesting the complete inspection report, including the name and credentials of the inspector, the date of inspection, and the specific findings. If no such inspection was conducted, your denial is based on speculation and must be reversed.`,
+
+    not_covered: `Your company has denied this claim stating that the failed component is "not covered" under my plan. I am challenging this determination for the following reasons:
+
+First, I have reviewed my service contract in its entirety. ${d.warrantyActive === "yes" ? "My coverage is currently active." : "The failure occurred during the active coverage period."} The specific failure involved is: ${wb || "[description of failure]"}.
+
+Second, if my contract is an exclusionary policy (which covers everything EXCEPT specifically listed exclusions), I am requesting you identify the exact exclusion, by section and page number, that applies to this component. If this component does not appear on the exclusion list, it is covered and this denial must be reversed.
+
+Third, if my contract is a stated-component (inclusionary) policy, I am requesting you explain specifically why this component does not fall within any covered category. General or vague references to coverage categories are insufficient.
+
+I am requesting the exact contract language — section, page number, and specific wording — that supports your determination that this component is excluded from coverage.`,
+
+    maintenance: `Your company has denied this claim citing "lack of maintenance." I am challenging this determination for the following reasons:
+
+First, under the Magnuson-Moss Warranty Act (15 U.S.C. §§ 2301–2312), a warranty provider CANNOT deny a claim solely because maintenance was performed by someone other than an authorized facility, or because a consumer cannot produce every maintenance record. Your company must demonstrate a direct causal connection between a specific maintenance omission and this specific failure.
+
+Second, the specific failure involved is: ${wb || "[description of failure]"}. I am requesting your company identify exactly which maintenance task was allegedly missed, on what date it should have been performed, and specifically how that omission directly caused this particular failure. A general statement that "maintenance records are incomplete" does not establish causation.
+
+Third, I have attached all available maintenance records for this RV. ${d.hasMaintenance !== "no" ? "These records demonstrate that I have maintained this vehicle in accordance with reasonable standards." : "While I may not have every receipt, the absence of a specific record does not prove that maintenance was not performed, and does not establish that any gap caused this failure."}`,
+
+    unauthorized: `Your company has denied this claim stating that the repair was performed without prior authorization. I am requesting reconsideration for the following reasons:
+
+First, the specific failure involved was: ${wb || "[description of failure]"}. The circumstances required immediate action to prevent further damage to my RV and to ensure the safety of its occupants. Delaying the repair to await authorization would have resulted in significantly greater damage and cost.
+
+Second, I have attached the complete repair invoice, the diagnostic report from the repair facility, and photographs documenting the failure. These documents demonstrate that the repair was necessary, the charges were reasonable, and the failure falls squarely within the covered components of my service contract.
+
+Third, I am requesting that your company evaluate this claim on its merits — specifically, whether the failed component is covered and whether the repair was necessary — rather than denying it solely on a procedural technicality. The pre-authorization requirement exists to prevent unnecessary repairs, not to avoid paying for legitimate covered failures.`,
+
+    modification: `Your company has denied this claim stating that a modification to my RV voided coverage. I am challenging this determination based on federal law:
+
+Under the Magnuson-Moss Warranty Act (15 U.S.C. §§ 2301–2312), a warranty provider CANNOT void coverage simply because aftermarket parts or modifications were installed. The law is clear: your company must demonstrate, with evidence, that a specific modification DIRECTLY CAUSED the specific failure being claimed. The burden of proof is on you, not on me.
+
+The specific failure involved is: ${wb || "[description of failure]"}. I am requesting your company provide the technical evidence and causal analysis that establishes a direct link between any modification and this failure. If no such analysis has been conducted, your denial has no legal basis.
+
+Simply noting that a modification exists, without proving it caused the failure, is a violation of the Magnuson-Moss Warranty Act and may constitute an unfair or deceptive trade practice under state consumer protection law.`,
+
+    other: `Your company has denied this claim citing the following reason: ${d.reasonOther || "[their stated reason]"}.
+
+I have reviewed my service contract and believe this denial is not supported by the terms of my agreement. The specific failure involved is: ${wb || "[description of failure]"}.
+
+I am requesting your company provide the exact contract language — section, page number, and specific wording — that supports this denial. I am also requesting any inspection reports, technical analysis, or documentation that your company relied upon in making this determination.
+
+If this documentation does not exist or does not support the denial, this claim must be reconsidered and coverage provided as outlined in my service contract.`
+  };
+
+  const enclosures = [];
+  if (d.hasPhotos === "yes") enclosures.push("Photographs of failure/damage (dated)");
+  enclosures.push("Copy of denial letter");
+  enclosures.push("Copy of service contract");
+  if (d.hasMaintenance !== "no") enclosures.push("Available maintenance records");
+  enclosures.push("Repair facility invoice and/or estimate");
+  enclosures.push("Repair facility diagnostic report");
+  if (d.hasPriorComms) enclosures.push("Prior correspondence with warranty company");
+
+  return `${today}
+
+VIA CERTIFIED MAIL (Return Receipt Requested)
+AND VIA EMAIL
+
+To: ${co || "%%WARRANTY COMPANY NAME — check your denial letter or contract%%"}
+Claims Department
+
+Re: FORMAL APPEAL — Denied Warranty Claim
+Policy/Contract #: ${cn}
+Claim #: ${cl}${rv ? `\nRV: ${rv}` : ""}
+VIN: ${vin}
+Owner: ${d.name || ""}
+
+Dear Claims Manager:
+
+I am formally appealing the denial of Claim #${cl} dated ${dd}. After careful review of my service contract, the denial letter, and applicable federal and state consumer protection law, I believe this denial is not supported and must be reversed. The facts and law supporting my position are set forth below.
+
+BACKGROUND:
+${rv ? `My RV is a ${rv}` : "My RV"}${d.vin ? `, VIN ${d.vin}` : ""}, covered under ${d.company !== "Other / Not Sure" ? d.company : "my service contract"}, Policy/Contract #${cn}. ${wb ? `On or about the date of failure, the following occurred: ${wb}.` : ""} I reported this failure and submitted a claim, which was denied.
+
+YOUR STATED REASON FOR DENIAL AND MY RESPONSE:
+
+${denialArgs[d.reason] || denialArgs.other}
+
+LEGAL AUTHORITY:
+
+This appeal is supported by the following legal protections:
+
+1. The Magnuson-Moss Warranty Act (15 U.S.C. §§ 2301–2312) is a federal law that governs consumer product warranties and service contracts. It requires warranty providers to honor the terms of their written agreements and prohibits unfair or deceptive denial practices. Importantly, this law provides for the recovery of attorney's fees by the consumer in the event of a successful legal action — meaning your company, not the consumer, bears the cost of litigation if this dispute proceeds to court.
+
+2. The ${d.state || "[State]"} Consumer Protection Act and applicable state regulations prohibit unfair and deceptive trade practices, including the wrongful denial of warranty claims. A pattern of such denials may be subject to investigation by the ${d.state || "[State]"} Department of Insurance and the ${d.state || "[State]"} Attorney General.${isCali ? `\n\n3. The California Song-Beverly Consumer Warranty Act provides additional protections for California consumers, including the potential for civil penalties of up to two times actual damages for willful violations.` : ""}
+
+WHAT I AM REQUESTING:
+
+1. A complete reversal of this denial and full coverage of the repair under the terms of my service contract.
+
+2. If you maintain your denial, I require a detailed written response that includes: (a) the exact contract section, page number, and language you are relying upon; (b) any inspection reports, technical findings, or expert opinions supporting your determination; and (c) a description of the internal review process applied to this claim.
+
+PLEASE BE ADVISED:
+
+If this appeal is not resolved to my satisfaction within 15 business days of your receipt of this letter, I intend to pursue the following actions simultaneously:
+
+  • File a formal complaint with the ${d.state || "[State]"} Department of Insurance
+  • File a complaint with the Better Business Bureau
+  • File a complaint with the ${d.state || "[State]"} Attorney General, Consumer Protection Division
+  • Contact the RVIA Dispute Resolution Program (DeMars & Associates, Ltd.)
+  • Pursue all available legal remedies under the Magnuson-Moss Warranty Act and applicable state consumer protection laws, including the recovery of attorney's fees
+
+I trust your company will give this matter the serious attention it requires. I expect a written response within 15 business days.
+
+Sincerely,
+
+
+${d.name || ""}
+${addr}
+${ph}
+${em}
+
+Enclosures:
+${enclosures.map(e => `  ${e}`).join("\n")}`;
+}
+
+function genCommissionerLetter(d) {
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const co = coName(d);
+  return `${today}
+
+${d.state || "[State]"} Department of Insurance
+Consumer Complaint Division
+
+Re: Formal Complaint Against ${co}
+Policy/Contract #: ${M(d.contractNum, "CONTRACT NUMBER")}
+Claim #: ${M(d.claimNum, "CLAIM NUMBER")}
+
+Dear Commissioner:
+
+I am filing this complaint regarding the denial of my warranty claim by ${co || "%%WARRANTY COMPANY NAME%%"}. I believe this denial is wrongful and unsupported by the terms of my service contract.
+
+SUMMARY OF COMPLAINT:
+
+I own a ${d.rvYear ? `${d.rvYear} ${d.rvMake || ""} ${d.rvModel || ""}`.trim() : "recreational vehicle"} covered under a service contract with ${co}, Policy/Contract #${M(d.contractNum, "CONTRACT NUMBER")}. I submitted a warranty claim (Claim #${M(d.claimNum, "CLAIM NUMBER")}) for the following failure: ${d.whatBroke || "[description of failure]"}.
+
+The estimated repair cost is $${d.amount ? Number(d.amount).toLocaleString() : "[amount]"}.
+
+My claim was denied on or about ${fmtDate(d.deniedDate) || "[date]"}. The reason given was: ${d.reason === "other" ? d.reasonOther : DENIAL_REASONS.find(r => r.id === d.reason)?.label || "see attached denial letter"}.
+
+ACTIONS TAKEN:
+
+I submitted a formal written appeal to ${co} via certified mail on ${M("", "DATE YOU MAILED APPEAL")}. As of this filing, ${co} has ${M("", "not responded / denied again / failed to provide contract language supporting denial")}.
+
+WHY I BELIEVE THE DENIAL IS WRONGFUL:
+
+${d.whatBroke ? `The failure — ${d.whatBroke} — ` : "The failure "}occurred during the active coverage period of my contract. I have reviewed my contract and believe the denied component falls within covered items. The warranty company has not provided the specific contract language, inspection findings, or technical evidence supporting their denial despite my written request.
+
+REQUESTED ACTION:
+
+I am requesting the Department investigate this complaint and require ${co} to:
+1. Provide a documented, evidence-based justification for this denial, or
+2. Reverse the denial and provide coverage as outlined in my service contract.
+
+I have attached copies of my denial letter, my service contract, my formal appeal letter, and all supporting documentation.
+
+Thank you for your attention to this matter.
+
+Sincerely,
+
+
+${d.name || ""}
+${M(d.address, "YOUR ADDRESS")}
+${M(d.phone, "YOUR PHONE")}
+${M(d.email, "YOUR EMAIL")}
+
+Attachments:
+  Copy of warranty denial letter
+  Copy of service contract
+  Copy of formal appeal letter sent to ${co}
+  Repair estimate/invoice
+  All supporting documentation`;
+}
+
+function genBBBLetter(d) {
+  const co = coName(d);
+  return `Better Business Bureau Complaint
+
+Company: ${co}
+
+My ${d.rvYear ? `${d.rvYear} ${d.rvMake || ""} ${d.rvModel || ""}`.trim() : "RV"} experienced the following failure: ${d.whatBroke || "[description]"}.
+
+I submitted a warranty claim (Claim #${M(d.claimNum, "CLAIM NUMBER")}, Contract #${M(d.contractNum, "CONTRACT NUMBER")}). My claim was denied on ${fmtDate(d.deniedDate) || "[date]"}. The reason given was: ${d.reason === "other" ? d.reasonOther : DENIAL_REASONS.find(r => r.id === d.reason)?.label || "[reason]"}.
+
+The estimated repair cost is $${d.amount ? Number(d.amount).toLocaleString() : "[amount]"}.
+
+I submitted a formal written appeal via certified mail. The company has not reversed the denial or provided the specific contract language supporting their decision.
+
+I believe this denial is wrongful and not supported by the terms of my service contract. I have documentation including the denial letter, my contract, repair estimates, and my appeal letter.
+
+Desired resolution: I am requesting ${co} reverse the denial and cover the repair as outlined in my service contract.
+
+${d.name || ""}
+${M(d.email, "YOUR EMAIL")}
+${M(d.phone, "YOUR PHONE")}`;
+}
+
+function getSteps(d) {
+  const s = d.state || "your state";
+  const steps = [
+    { n: 1, t: "Send Your Appeal Letter", w: "Do this today", desc: "Print it and mail it via Certified Mail with Return Receipt Requested. Also email it to the claims department. Certified mail creates a legal paper trail they cannot deny receiving.", tip: "Keep that green return receipt card when it comes back in the mail. That is your proof of delivery." },
+    { n: 2, t: "Mark Your Calendar: 15 Business Days", w: "Set a reminder right now", desc: "Give them exactly 15 business days to respond in writing. If they deny again or ignore you completely, move to Step 3.", tip: "No response IS a response. Silence actually strengthens your position in the next steps." },
+    { n: 3, t: "Call and Say These Exact Words", w: "Day 16 if no resolution", desc: `Call the claims department and say exactly this:\n\n"I would like to escalate this to a supervisor or your Office of the President before I file a formal complaint with the ${s} Department of Insurance and the Better Business Bureau."\n\nThat one sentence changes the entire conversation.`, tip: "Write down the full name of every person you speak with, the date, the time, and exactly what they said. Every single call." },
+    { n: 4, t: "File Your Commissioner Complaint", w: "If Step 3 doesn't resolve it", desc: `File a complaint with the ${s} Department of Insurance. Use the complaint letter we generated for you. This is free. The company has 15 to 30 days to respond to the commissioner in writing, and they take it seriously because a pattern of complaints triggers regulatory audits and can threaten their license.`, tip: "This single step resolves a significant percentage of disputes. Companies settle individual claims to prevent the complaint from becoming part of a pattern." },
+    { n: 5, t: "File Your BBB Complaint", w: "Same day as Step 4", desc: "File with the Better Business Bureau using the complaint we generated. Do this the same day as the commissioner complaint. Multiple simultaneous complaints create maximum pressure.", tip: "Also file with the ${s} Attorney General, Consumer Protection Division for a third layer of pressure." },
+    { n: 6, t: "Contact the Free RVIA Dispute Program", w: "For manufacturer warranties only", desc: "This is a FREE mediation program run by DeMars & Associates.\n\nContact: Rylee McCoy\nPhone: 262-549-6700 ext. 1280\nEmail: info@demarsassociates.com\n\nYou speak directly with someone at the manufacturer who has settlement authority.", tip: "This only applies to manufacturer (factory) warranties, not extended service contracts. But if yours qualifies, it is powerful and completely free." }
+  ];
+  if (parseFloat(d.amount) <= 12500) steps.push({ n: 7, t: "Small Claims Court", w: "Your final option and a strong one", desc: `Your repair of $${d.amount ? Number(d.amount).toLocaleString() : "___"} is within small claims limits in most states. No lawyer needed. Filing fee is usually $30 to $75. Many warranty companies settle the moment they are served because sending their own lawyer to your local court costs them more than simply paying your claim.`, tip: `Search "${s} small claims court filing" for your local process and dollar limits.` });
+  const isCali = d.state === "California";
+  const isStrong = STRONG_LEMON.includes(d.state);
+  steps.push({ n: steps.length + 1, t: "The Laws Warranty Companies Fear", w: "Know this. Use it.", desc: "The Magnuson-Moss Warranty Act is a federal law that says if a warranty company wrongfully denies your claim, they may have to pay YOUR attorney's fees on top of your repair costs. This means a consumer protection attorney may take your case at no cost to you because they collect their fees from the warranty company when you win.\n\nMention this law by name in every single communication.", tip: isCali ? "California bonus: The Song-Beverly Consumer Warranty Act gives you even stronger protections. You may be entitled to up to 2x your actual damages if the denial was willful." : isStrong ? `${d.state} has strong consumer protection laws that may give you additional remedies beyond federal law.` : "Check whether your state has additional consumer protection laws that apply to warranty disputes." });
+  return steps;
+}
+
+// ════════════════════════════════════════
+// UI COMPONENTS
+// ════════════════════════════════════════
+function Btn({ children, onClick, disabled, variant = "primary", style: sx }) {
+  const base = { border: "none", borderRadius: 10, padding: "16px 32px", fontSize: 17, fontWeight: 800, cursor: disabled ? "not-allowed" : "pointer", width: "100%", textAlign: "center", transition: "all 0.15s", letterSpacing: 0.3, fontFamily: "inherit" };
+  const styles = {
+    primary: { ...base, background: disabled ? "#ccc" : C.amber, color: C.white, boxShadow: disabled ? "none" : `0 3px 0 ${C.amberDk}` },
+    secondary: { ...base, background: "none", border: "1px solid #ddd", color: C.mu, padding: "12px 24px", fontSize: 14, fontWeight: 600 },
+    navy: { ...base, background: C.navy, color: C.white },
+    outline: { ...base, background: C.white, border: `2px solid ${C.navy}`, color: C.navy, padding: "14px 24px", fontSize: 15 }
+  };
+  return <button style={{ ...styles[variant], ...sx }} onClick={onClick} disabled={disabled}>{children}</button>;
+}
+
+function Back({ onClick, label }) {
+  return <button onClick={onClick} style={{ background: "none", border: "none", color: C.navy, fontSize: 14, fontWeight: 600, cursor: "pointer", padding: "0 0 16px", display: "flex", alignItems: "center", gap: 4 }}>← {label || "Back"}</button>;
+}
+
+function LetterPage({ title, text, claimNum, onBack, state, letterType }) {
+  const [copied, setCopied] = useState(false);
+
+  const doCopy = () => {
+    const plain = text.replace(/%%([^%]+)%%/g, "$1");
+    const ta = document.createElement("textarea");
+    ta.value = plain; ta.style.cssText = "position:fixed;left:-9999px";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); setCopied(true); setTimeout(() => setCopied(false), 3000); } catch (e) {}
+    document.body.removeChild(ta);
+  };
+
+  const doPrint = () => {
+    const plain = text.replace(/%%([^%]+)%%/g, "______$1______");
+    const cl = claimNum || "N/A";
+    const w = window.open("", "_blank");
+    w.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>@page{size:letter;margin:0.85in 1in;}body{font-family:"Times New Roman",serif;font-size:11.5pt;line-height:1.45;color:#000;white-space:pre-wrap;margin:0;padding:0;}@media print{.footer{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:8pt;color:#888;border-top:1px solid #ccc;padding:4px 0;}@page{@bottom-center{content:"Claim #${cl} | Page " counter(page) " of " counter(pages);font-size:8pt;}}}</style></head><body><div class="footer">Claim #${cl} | Confidential</div>${plain}</body></html>`);
+    w.document.close(); w.print();
+  };
+
+  const doEmail = () => {
+    const plain = text.replace(/%%([^%]+)%%/g, "$1");
+    const subj = encodeURIComponent(`Formal Appeal - Claim #${claimNum || ""}`);
+    const body = encodeURIComponent(plain);
+    window.open(`mailto:?subject=${subj}&body=${body}`);
+  };
+
+  const renderText = () => {
+    return text.split(/(%%[^%]+%%)/g).map((p, i) => {
+      if (p.startsWith("%%") && p.endsWith("%%")) {
+        return <span key={i} style={{ background: "#fff3cd", padding: "2px 6px", borderRadius: 3, border: "1px dashed #e8941b", fontWeight: 700, color: "#7c5a10" }}>{p.slice(2, -2)}</span>;
+      }
+      return <span key={i}>{p}</span>;
+    });
+  };
+
+  return (
+    <div style={{ background: C.cream, minHeight: "100vh", padding: "24px 16px" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", fontFamily: "'Inter',-apple-system,sans-serif" }}>
+        <Back onClick={onBack} label="Back to Fight Plan" />
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: C.navy, margin: "0 0 16px" }}>{title}</h1>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
+          <button onClick={doCopy} style={{ background: copied ? C.forest : C.lNav, color: copied ? C.white : C.navy, border: `1px solid ${C.navy}`, borderRadius: 8, padding: "12px 8px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{copied ? "Copied!" : "Copy"}</button>
+          <button onClick={doPrint} style={{ background: C.navy, color: C.white, border: "none", borderRadius: 8, padding: "12px 8px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Print</button>
+          <button onClick={doEmail} style={{ background: C.amber, color: C.white, border: "none", borderRadius: 8, padding: "12px 8px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Email</button>
+          <button onClick={doPrint} style={{ background: C.forest, color: C.white, border: "none", borderRadius: 8, padding: "12px 8px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Save PDF</button>
+        </div>
+        <p style={{ fontSize: 13, color: C.mu, margin: "0 0 12px" }}>Fields highlighted in <span style={{ background: "#fff3cd", padding: "1px 6px", borderRadius: 3, border: "1px dashed #e8941b" }}>yellow</span> still need your info. Fill them in before sending.</p>
+        {(letterType === "commissioner" || letterType === "bbb") && <div style={{ background: C.lFor, borderRadius: 10, padding: 14, marginBottom: 12 }}>
+          {letterType === "commissioner" && state && <><p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 700, color: C.forest }}>Where to file your complaint:</p><a href={`https://www.google.com/search?q=${encodeURIComponent(state)}+department+of+insurance+file+complaint+consumer`} target="_blank" rel="noopener" style={{ fontSize: 13, color: C.navy, fontWeight: 600 }}>Search: "{state} department of insurance file complaint"</a><br/><a href={`https://www.google.com/search?q=${encodeURIComponent(state)}+attorney+general+consumer+protection+file+complaint`} target="_blank" rel="noopener" style={{ fontSize: 13, color: C.navy, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Also: "{state} attorney general consumer complaint"</a></>}
+          {letterType === "bbb" && <><p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 700, color: C.forest }}>Where to file your BBB complaint:</p><a href="https://www.bbb.org/file-a-complaint" target="_blank" rel="noopener" style={{ fontSize: 13, color: C.navy, fontWeight: 600 }}>Go to bbb.org/file-a-complaint</a></>}
+        </div>}
+        <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 10, padding: "36px 32px", fontSize: 13, fontFamily: "'Times New Roman',serif", whiteSpace: "pre-wrap", lineHeight: 1.55, color: "#222", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          {renderText()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DocCheck({ data, onChange }) {
+  const items = [
+    { key: "hasDenialLetter", label: "Your denial letter" },
+    { key: "hasContract", label: "Your warranty or service contract (full document)" },
+    { key: "hasInvoice", label: "The repair shop's invoice or estimate" },
+    { key: "hasDiagnostic", label: "The mechanic's diagnostic report" },
+    { key: "hasPhotos2", label: "Photos of the damage or failure (with dates)" },
+    { key: "hasMaintenance", label: "Maintenance records" },
+    { key: "hasPriorComms", label: "Emails, letters, or notes from warranty company calls" },
+  ];
+  return (
+    <div style={{ background: C.lFor, borderRadius: 14, padding: 20 }}>
+      <h3 style={{ margin: "0 0 8px", color: C.forest, fontSize: 17 }}>Before You Send Anything</h3>
+      <p style={{ color: C.mu, fontSize: 13, margin: "0 0 12px" }}>Gather what you can and check them off:</p>
+      {items.map(({ key, label }) => (
+        <label key={key} style={{ display: "flex", gap: 10, padding: "7px 0", cursor: "pointer", fontSize: 14, color: data[key] ? C.forest : C.ch }}>
+          <input type="checkbox" checked={!!data[key]} onChange={() => onChange(key, !data[key])} style={{ marginTop: 2, width: 18, height: 18, accentColor: C.forest }} />
+          <span style={{ textDecoration: data[key] ? "line-through" : "none" }}>{label}</span>
+        </label>
+      ))}
+      <div style={{ marginTop: 12, padding: 12, background: C.white, borderRadius: 8, fontSize: 13, color: C.mu }}>
+        Don't have everything? Send what you have. They have to prove your maintenance caused the failure, not the other way around.
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════
+// MAIN APP
+// ════════════════════════════════════════
+function App() {
+  const [view, setView] = useState(() => {
+    const p = new URLSearchParams(window.location.search).get("view");
+    return (p === "lemon" || p === "classaction") ? p : "landing";
+  });
+  const [qStep, setQStep] = useState(1);
+  const [screenChoice, setScreenChoice] = useState("");
+  const [showFlag, setShowFlag] = useState(false);
+  const [data, setData] = useState({
+    name: "", state: "", company: "", companyOther: "", dealerCompany: "",
+    reason: "", reasonOther: "", whatBroke: "", amount: "", deniedDate: "", moreDetails: "",
+    rvType: "", rvTypeOther: "", rvYear: "", rvMake: "", rvModel: "",
+    shopCount: "1", denialWritten: "yes", warrantyActive: "yes", preAuth: "yes",
+    hasPhotos: "unsure", hasMaintenance: "unsure",
+    contractNum: "", claimNum: "", vin: "", address: "", phone: "", email: "",
+    hasDenialLetter: false, hasContract: false, hasInvoice: false,
+    hasDiagnostic: false, hasPhotos2: false, hasPriorComms: false
+  });
+  const [lemonData, setLemonData] = useState({ make: "", shopTimes: "", daysOut: "", rvType: "towable", state: "", email: "", leadName: "", leadPhone: "" });
+  const [lResult, setLResult] = useState(null);
+  const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [caData, setCaData] = useState({ email: "", rv: "", name: "", phone: "" });
+  const [caSubmitted, setCaSubmitted] = useState(false);
+  const [caSubmitting, setCaSubmitting] = useState(false);
+  const uCa = (k, v) => setCaData(p => ({ ...p, [k]: v }));
+  const [listEmail, setListEmail] = useState("");
+  const [listSubmitted, setListSubmitted] = useState(false);
+  const [listSubmitting, setListSubmitting] = useState(false);
+  const LIST_KEY = "478f9ae1-6bb7-41c6-82cd-a13fabe97716";
+  const [letterView, setLetterView] = useState(null); // "appeal" | "commissioner" | "bbb"
+
+  const u = (k, v) => setData(p => ({ ...p, [k]: v }));
+  const uL = (k, v) => setLemonData(p => ({ ...p, [k]: v }));
+
+  const wrap = { maxWidth: 680, margin: "0 auto", fontFamily: "'Inter',-apple-system,system-ui,sans-serif", color: C.ch, lineHeight: 1.65 };
+  const card = { background: C.white, borderRadius: 16, padding: "24px 20px", boxShadow: "0 2px 16px rgba(0,0,0,0.06)", marginBottom: 20 };
+  const inp = { width: "100%", padding: "13px 14px", borderRadius: 10, border: "1px solid #ddd", fontSize: 16, boxSizing: "border-box", outline: "none", fontFamily: "inherit" };
+  const optC = s => ({ padding: "14px 16px", borderRadius: 10, border: s ? `2px solid ${C.navy}` : "1px solid #e4e4e4", background: s ? C.lNav : C.white, cursor: "pointer", marginBottom: 8, transition: "all 0.15s" });
+  const sHead = { fontSize: 13, fontWeight: 700, color: C.amber, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 6px" };
+  const skip = <span style={{ fontWeight: 400, color: "#bbb", fontSize: 12 }}> (skip if you don't have it)</span>;
+
+  // ──── LETTER VIEWS ────
+  if (letterView === "appeal") return <LetterPage title="Your Appeal Letter" text={genAppealLetter(data)} claimNum={data.claimNum} state={data.state} letterType="appeal" onBack={() => go(setLetterView,null)} />;
+  if (letterView === "commissioner") return <LetterPage title="State Insurance Commissioner Complaint" text={genCommissionerLetter(data)} claimNum={data.claimNum} state={data.state} letterType="commissioner" onBack={() => go(setLetterView,null)} />;
+  if (letterView === "bbb") return <LetterPage title="BBB Complaint" text={genBBBLetter(data)} claimNum={data.claimNum} state={data.state} letterType="bbb" onBack={() => go(setLetterView,null)} />;
+
+  // ──── LANDING ────
+  if (view === "landing") return (
+    <div style={{ background: C.cream, minHeight: "100vh" }}>
+      <div style={{ background: C.navy, padding: "14px 0", borderBottom: `4px solid ${C.amber}` }}>
+        <div style={{ ...wrap, textAlign: "center", padding: "0 16px" }}>
+          <div style={{ color: C.white, fontWeight: 800, fontSize: 22, marginTop: 4 }}>RV Warranty <span style={{ color: C.amber }}>Bust</span></div>
+          <div style={{ color: C.amber, fontSize: 14, fontWeight: 700, fontStyle: "italic", marginTop: 2 }}>We get you paid.</div>
+        </div>
+      </div>
+      <div style={{ background: `linear-gradient(135deg,${C.navy} 0%,#244b6e 100%)`, padding: "44px 16px 40px", position: "relative" }}>
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 4, background: road }} />
+        <div style={{ ...wrap, textAlign: "center" }}>
+          <p style={{ color: C.amber, fontSize: 15, fontWeight: 700, margin: "0 0 8px", letterSpacing: 0.5 }}>Did you know...</p>
+          <h1 style={{ color: C.white, fontSize: "clamp(22px,5vw,32px)", fontWeight: 800, lineHeight: 1.2, margin: "0 0 14px" }}>Nearly half of warranty claims are denied. Almost nobody fights back!</h1>
+          <p style={{ color: "#c0d0e0", fontSize: 15, margin: "0 0 8px", maxWidth: 500, marginLeft: "auto", marginRight: "auto" }}>Why? Because most people don't know how to overturn a denial. They think they need a lawyer. They feel overwhelmed. They give up.</p>
+          <p style={{ color: C.amber, fontSize: 17, fontWeight: 800, margin: "0 0 6px" }}>That's where we come in.</p>
+          <p style={{ color: "#8fa8c2", fontSize: 13, margin: "0 0 24px" }}>You paid for protection. Now make them honor it.</p>
+          <Btn onClick={() => go(setView,"value")} style={{ maxWidth: 320 }}>Let's Get You Paid!</Btn>
+          <p style={{ color: "#8fa8c2", fontSize: 12, marginTop: 14, fontStyle: "italic" }}>Our mission: help more RV owners fight back and get what they already paid for.</p>
+        </div>
+      </div>
+      <div style={{ padding: "36px 16px", ...wrap }}>
+        <div style={card}>
+          <p style={{ fontSize: 16, margin: "0 0 12px" }}>Your claim was denied. Maybe they called it "wear and tear." Maybe "pre-existing condition." Maybe they said the part isn't covered or you didn't get permission first.</p>
+          <p style={{ fontSize: 16, margin: "0 0 12px", fontWeight: 700, color: C.navy }}>No matter what reason they gave you, there's a process to challenge it.</p>
+          <p style={{ fontSize: 16, margin: 0 }}>Federal law. State law. And a system built to hold them accountable.</p>
+        </div>
+        <div style={{ height: 4, background: road, margin: "28px 0", borderRadius: 2, opacity: 0.5 }} />
+        <p style={sHead}>What you get</p>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: C.navy, margin: "0 0 16px" }}>Answer a few simple questions. Get your complete fight plan.</h2>
+        <div style={{ display: "grid", gap: 10 }}>
+          {[
+            ["📄", "Custom Appeal Letter", "Written for YOUR denial, with claims department and legal language that gets results. Ready to print and send."],
+            ["📋", "Commissioner Complaint Letter", "Pre-filled complaint to your state's Department of Insurance. This is what makes warranty companies nervous."],
+            ["📝", "BBB Complaint Letter", "Pre-filled Better Business Bureau complaint. One more layer of pressure."],
+            ["📞", "Exactly Who to Contact", "The right people to reach, what to say word for word, and when to say it."],
+            ["📍", "Your State's Complaint Contacts", "Exactly where to report them so they take you seriously."],
+            ["🍋", "Free Lemon Law Check", "See if your RV qualifies for a full buyback or replacement."],
+            ["⚖️", "Free Class Action Check", "See if your RV is part of an active lawsuit you might not know about."],
+            ["🛡️", "The Laws Warranty Companies Don't Want You to Know", "Federal and state laws protect you. We know them. And we put them to work in your appeal letter."],
+          ].map(([icon, title, desc], i) => (
+            <div key={i} style={{ ...card, display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 0, cursor: (title.includes("Lemon") || title.includes("Class")) ? "pointer" : "default" }} onClick={() => { if (title.includes("Lemon")) go(setView,"lemon"); if (title.includes("Class")) go(setView,"classaction"); }}>
+              <span style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>{icon}</span>
+              <div><h3 style={{ margin: "0 0 3px", fontSize: 14, fontWeight: 700 }}>{title}</h3><p style={{ margin: 0, fontSize: 13, color: C.mu }}>{desc}</p></div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 16, padding: 14, background: C.lNav, borderRadius: 12, textAlign: "center" }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.navy }}>This is not a generic template. Everything is built around your answers. Your denial. Your state. Your warranty company.</p>
+        </div>
+        <div style={{ height: 4, background: road, margin: "28px 0", borderRadius: 2, opacity: 0.5 }} />
+        <p style={sHead}>Free tools</p>
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
+          <div style={{ ...card, textAlign: "center", cursor: "pointer", borderTop: `4px solid ${C.forest}`, marginBottom: 0 }} onClick={() => go(setView,"lemon")}><span style={{ fontSize: 26 }}>🍋</span><h3 style={{ fontSize: 14, fontWeight: 700, color: C.forest, margin: "6px 0 2px" }}>Lemon Law Check</h3><p style={{ fontSize: 12, color: C.mu, margin: 0 }}>Free in 60 seconds</p></div>
+          <div style={{ ...card, textAlign: "center", cursor: "pointer", borderTop: `4px solid ${C.navy}`, marginBottom: 0 }} onClick={() => go(setView,"classaction")}><span style={{ fontSize: 26 }}>⚖️</span><h3 style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: "6px 0 2px" }}>Class Action Check</h3><p style={{ fontSize: 12, color: C.mu, margin: 0 }}>Free in 60 seconds</p></div>
+        </div>
+        <div style={{ height: 4, background: road, margin: "28px 0", borderRadius: 2, opacity: 0.5 }} />
+        <div style={{ ...card, background: C.lAmb, textAlign: "center" }}>
+          {!listSubmitted ? <>
+            <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800, color: C.navy }}>Get the free RV Warranty Denial Checklist</h3>
+            <p style={{ margin: "0 0 14px", fontSize: 13, color: C.mu }}>The 7 things to do the moment your claim gets denied. No spam, just useful stuff.</p>
+            <div style={{ display: "flex", gap: 8, maxWidth: 400, margin: "0 auto" }}>
+              <input style={{ ...inp, flex: 1 }} value={listEmail} onChange={e => setListEmail(e.target.value)} placeholder="you@email.com" type="email" />
+              <button onClick={async () => {
+                if (!listEmail) return;
+                setListSubmitting(true);
+                await sendLead2(LIST_KEY, "New Email List Signup", { email: listEmail });
+                setListSubmitting(false);
+                setListSubmitted(true);
+              }} disabled={!listEmail || listSubmitting} style={{ background: C.amber, color: C.navy, border: "none", borderRadius: 10, padding: "0 20px", fontWeight: 800, fontSize: 14, cursor: "pointer" }}>{listSubmitting ? "..." : "Get It"}</button>
+            </div>
+          </> : <p style={{ margin: 0, fontSize: 14, color: C.forest, fontWeight: 700 }}>✓ You're on the list. Checklist coming to your inbox.</p>}
+        </div>
+        <div style={{ height: 4, background: road, margin: "28px 0", borderRadius: 2, opacity: 0.5 }} />
+        <p style={{ fontSize: 11, color: "#bbb", textAlign: "center", maxWidth: 500, margin: "0 auto" }}>RV Warranty Bust helps RV owners understand and navigate the warranty dispute process. We are not attorneys and this is not legal advice. We do not guarantee outcomes. We guarantee you will have every tool to fight as hard as possible. If your situation needs legal representation, we point you to the right resources, including federal laws that may require the warranty company to cover your attorney fees.</p>
+      </div>
+    </div>
+  );
+
+  // ──── VALUE/PRICE PAGE ────
+  if (view === "value") return (
+    <div style={{ background: C.cream, minHeight: "100vh", padding: "24px 16px" }}>
+      <div style={wrap}>
+        <Back onClick={() => go(setView,"landing")} />
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: C.navy, margin: "8px 0" }}>Your Complete Fight Plan</h1>
+        </div>
+        <div style={card}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: C.navy, margin: "0 0 12px" }}>Here's what you're getting:</h3>
+          {["Custom appeal letter tailored to your exact denial reason", "State insurance commissioner complaint letter, pre-filled", "BBB complaint letter, pre-filled", "Step-by-step escalation plan with exact scripts", "Free lemon law qualification check", "Free class action check", "Federal and state law references loaded into every letter", "Document checklist so nothing gets missed"].map((t, i) => (
+            <div key={i} style={{ display: "flex", gap: 10, padding: "5px 0", fontSize: 14 }}>
+              <span style={{ color: C.forest, fontWeight: 800 }}>✓</span><span>{t}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ ...card, background: C.navy, color: C.white, textAlign: "center", padding: 28 }}>
+          <p style={{ margin: "0 0 6px", fontSize: 14, color: "#8fa8c2" }}>A consumer protection attorney charges $200 to $500 an hour just to talk.</p>
+          <p style={{ margin: "0 0 2px", fontSize: 44, fontWeight: 900, color: C.amber }}>$97</p>
+          <p style={{ margin: "0 0 20px", fontSize: 15, color: "#c0d0e0" }}>One time. No matter how big your claim.</p>
+          <Btn onClick={() => go(setView,"questionnaire")}>Start My Appeal</Btn>
+        </div>
+        
+      </div>
+    </div>
+  );
+
+  // ──── LEMON ────
+  if (view === "lemon") {
+    const checkLemon = () => { const t = parseInt(lemonData.shopTimes) || 0; const d = parseInt(lemonData.daysOut) || 0; const strong = STRONG_LEMON.includes(lemonData.state); if (t >= 3 || d >= 30) setLResult({ q: true, msg: `Based on your answers, your RV may qualify under lemon law protections. ${lemonData.rvType === "motorized" ? "Motorized RVs have stronger lemon law coverage in most states." : "Towable RVs have limited lemon law coverage in many states, but federal law (Magnuson-Moss) may still protect you."} ${strong ? lemonData.state + " has strong consumer protection laws." : ""} We recommend speaking with a lemon law attorney. Many take these cases for free.` }); else setLResult({ q: false, msg: "Based on your answers, your RV may not meet typical lemon law thresholds yet. But if the same problem keeps happening, keep documenting every repair visit. In the meantime, if your warranty claim was denied, our Fight Back system can help you challenge the denial directly." }); };
+    return (<div style={{ background: C.cream, minHeight: "100vh", padding: "24px 16px" }}><div style={wrap}>
+      <Back onClick={() => { go(setView,"landing"); setLResult(null); }} />
+      <div style={card}><span style={{ fontSize: 36 }}>🍋</span><h2 style={{ fontSize: 22, fontWeight: 800, color: C.navy, margin: "8px 0" }}>Is Your RV a Lemon?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 20px" }}>Answer 5 quick questions. Free.</p>
+        {!lResult ? <>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>RV make and model</span><input style={{ ...inp, marginTop: 4 }} value={lemonData.make} onChange={e => uL("make", e.target.value)} placeholder="e.g. 2022 Grand Design Imagine" /></label>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>How many times in the shop for the SAME problem?</span><input style={{ ...inp, marginTop: 4 }} value={lemonData.shopTimes} onChange={e => uL("shopTimes", e.target.value.replace(/\D/g, ""))} placeholder="e.g. 3" /></label>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Total days out of service</span><input style={{ ...inp, marginTop: 4 }} value={lemonData.daysOut} onChange={e => uL("daysOut", e.target.value.replace(/\D/g, ""))} placeholder="e.g. 45" /></label>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Motorized or towable?</span><div style={{ display: "flex", gap: 8, marginTop: 4 }}>{[["motorized", "Motorhome"], ["towable", "Towable"]].map(([v, l]) => <div key={v} style={{ ...optC(lemonData.rvType === v), flex: 1, textAlign: "center" }} onClick={() => uL("rvType", v)}><span style={{ fontSize: 14 }}>{l}</span></div>)}</div></label>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Your state</span><select style={{ ...inp, marginTop: 4, background: C.white }} value={lemonData.state} onChange={e => uL("state", e.target.value)}><option value="">Pick your state</option>{STATES.map(s => <option key={s}>{s}</option>)}</select></label>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Your email</span><input style={{ ...inp, marginTop: 4 }} value={lemonData.email} onChange={e => uL("email", e.target.value)} placeholder="you@email.com" type="email" /></label>
+          <Btn onClick={checkLemon} disabled={!lemonData.email || !lemonData.state}>Check Now</Btn>
+        </> : <div style={{ padding: 20, background: lResult.q ? C.lFor : C.lAmb, borderRadius: 12, marginTop: 12 }}>
+          <h3 style={{ margin: "0 0 8px", color: lResult.q ? C.forest : C.amber, fontSize: 17 }}>{lResult.q ? "Your RV may qualify." : "Not quite there yet."}</h3>
+          <p style={{ margin: "0 0 16px", fontSize: 14 }}>{lResult.msg}</p>
+          {lResult.q && <div style={{ background: C.white, borderRadius: 10, padding: 16, marginBottom: 16 }}>
+            {!leadSubmitted ? <>
+              <h4 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: C.navy }}>Talk to a lemon law attorney</h4>
+              <p style={{ margin: "0 0 12px", fontSize: 13, color: C.mu }}>By submitting, you agree we may share your info with one matched lemon law attorney to review your case. You'll hear from one firm, not several.</p>
+              <label style={{ display: "block", marginBottom: 10 }}><span style={{ fontSize: 12, fontWeight: 600 }}>Your name</span><input style={{ ...inp, marginTop: 4, padding: "10px 12px" }} value={lemonData.leadName} onChange={e => uL("leadName", e.target.value)} placeholder="First and last name" /></label>
+              <label style={{ display: "block", marginBottom: 12 }}><span style={{ fontSize: 12, fontWeight: 600 }}>Phone number</span><input style={{ ...inp, marginTop: 4, padding: "10px 12px" }} value={lemonData.leadPhone} onChange={e => uL("leadPhone", e.target.value)} placeholder="(555) 123-4567" type="tel" /></label>
+              <button onClick={async () => {
+                if (!lemonData.leadName || !lemonData.leadPhone) return;
+                setLeadSubmitting(true);
+                await sendLead("New Lemon Law Lead", { name: lemonData.leadName, phone: lemonData.leadPhone, email: lemonData.email, state: lemonData.state, rv: lemonData.make, shop_times: lemonData.shopTimes, days_out: lemonData.daysOut, rv_type: lemonData.rvType });
+                setLeadSubmitting(false);
+                setLeadSubmitted(true);
+              }} disabled={!lemonData.leadName || !lemonData.leadPhone || leadSubmitting} style={{ width: "100%", background: (!lemonData.leadName || !lemonData.leadPhone || leadSubmitting) ? "#ccc" : C.forest, color: C.white, border: "none", borderRadius: 10, padding: "13px", fontSize: 14, fontWeight: 700, cursor: (!lemonData.leadName || !lemonData.leadPhone) ? "default" : "pointer" }}>{leadSubmitting ? "Submitting..." : "Talk to an Attorney"}</button>
+            </> : <p style={{ margin: 0, fontSize: 14, color: C.forest, fontWeight: 600 }}>✓ Submitted. A matched lemon law attorney will reach out soon.</p>}
+          </div>}
+          <Btn onClick={() => go(setView,"value")}>Build My Appeal & Get Me Paid!</Btn>
+        </div>}
+      </div></div></div>);
+  }
+
+  // ──── CLASS ACTION ────
+  if (view === "classaction") return (
+    <div style={{ background: C.cream, minHeight: "100vh", padding: "24px 16px" }}><div style={wrap}>
+      <Back onClick={() => go(setView,"landing")} />
+      <div style={card}><span style={{ fontSize: 36 }}>⚖️</span><h2 style={{ fontSize: 22, fontWeight: 800, color: C.navy, margin: "8px 0" }}>Is Your RV Part of a Class Action?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>RV manufacturers face lawsuits regularly for frame defects, delamination, slide failures, and more.</p>
+        {!caSubmitted ? <>
+          <p style={{ fontSize: 14, color: C.amber, fontWeight: 600, margin: "0 0 12px" }}>Coming soon. Leave your info and we'll notify you when this tool is live.</p>
+          <p style={{ fontSize: 13, color: C.mu, margin: "0 0 16px" }}>By submitting, you agree we may share your info with one matched class action firm to review your case. You'll hear from one firm, not several.</p>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Your name</span><input style={{ ...inp, marginTop: 4 }} value={caData.name} onChange={e => uCa("name", e.target.value)} placeholder="First and last name" /></label>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Your email</span><input style={{ ...inp, marginTop: 4 }} value={caData.email} onChange={e => uCa("email", e.target.value)} placeholder="you@email.com" type="email" /></label>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Phone number</span><input style={{ ...inp, marginTop: 4 }} value={caData.phone} onChange={e => uCa("phone", e.target.value)} placeholder="(555) 123-4567" type="tel" /></label>
+          <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>RV year, make, and model</span><input style={{ ...inp, marginTop: 4 }} value={caData.rv} onChange={e => uCa("rv", e.target.value)} placeholder="e.g. 2023 Thor Magnitude" /></label>
+          <Btn onClick={async () => {
+            if (!caData.name || !caData.email || !caData.phone) return;
+            setCaSubmitting(true);
+            await sendLead("New Class Action Lead", { name: caData.name, email: caData.email, phone: caData.phone, rv: caData.rv });
+            setCaSubmitting(false);
+            setCaSubmitted(true);
+          }} disabled={!caData.name || !caData.email || !caData.phone || caSubmitting}>{caSubmitting ? "Submitting..." : "Notify Me"}</Btn>
+        </> : <p style={{ margin: 0, fontSize: 14, color: C.forest, fontWeight: 600 }}>✓ Submitted. We'll be in touch.</p>}
+      </div></div></div>
+  );
+
+  // ──── PAYMENT GATE ────
+  if (view === "payment") {
+    const denialLabel = DENIAL_REASONS.find(r => r.id === data.reason)?.label || data.reasonOther || "your denial";
+    const co = coName(data) || "your warranty company";
+    return (
+      <div style={{ background: C.cream, minHeight: "100vh", padding: "24px 16px" }}>
+        <div style={wrap}>
+          <Back onClick={() => { go(setView,"questionnaire"); go(setQStep,5); }} />
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: C.navy, margin: "8px 0" }}>{data.name}, your fight plan is almost ready.</h1>
+            <p style={{ fontSize: 15, color: C.mu, margin: "0 0 4px" }}>{co ? <>You are building a custom appeal against <strong style={{ color: C.navy }}>{co}</strong></> : "You are building a custom appeal against your warranty company"}</p>
+            <p style={{ fontSize: 15, color: C.mu, margin: "0 0 4px" }}>Denial reason: <strong style={{ color: C.navy }}>{denialLabel}</strong></p>
+            {data.whatBroke && <p style={{ fontSize: 15, color: C.mu, margin: "0 0 20px" }}>For: <strong style={{ color: C.navy }}>{data.whatBroke}</strong></p>}
+          </div>
+          <div style={card}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: C.navy, margin: "0 0 12px" }}>Complete your payment to get:</h3>
+            {["Custom appeal letter written for YOUR denial", "State insurance commissioner complaint letter, pre-filled", "BBB complaint letter, pre-filled", "Step-by-step escalation plan with exact scripts", "Free lemon law check", "Federal and state law references in every letter", "Document checklist"].map((t, i) => (
+              <div key={i} style={{ display: "flex", gap: 10, padding: "5px 0", fontSize: 14 }}>
+                <span style={{ color: C.forest, fontWeight: 800 }}>✓</span><span>{t}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ ...card, background: C.navy, color: C.white, textAlign: "center", padding: 28 }}>
+            <p style={{ margin: "0 0 6px", fontSize: 14, color: "#8fa8c2" }}>A consumer protection attorney charges $200 to $500 an hour just to talk.</p>
+            <p style={{ margin: "0 0 2px", fontSize: 44, fontWeight: 900, color: C.amber }}>$97</p>
+            <p style={{ margin: "0 0 20px", fontSize: 15, color: "#c0d0e0" }}>One time. No matter how big your claim.</p>
+            <a href="https://buy.stripe.com/3cIbJ3G3a8uM4hLg41cfK00" style={{ display: "block", textDecoration: "none", background: C.amber, color: C.navy, border: "none", borderRadius: 12, padding: "16px 24px", fontSize: 16, fontWeight: 800, cursor: "pointer", textAlign: "center" }}>Complete Payment & Get Me Paid!</a>
+            <p style={{ fontSize: 11, color: "#8fa8c2", marginTop: 12 }}>Secure checkout via Stripe. After payment, come back to this page and continue.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ──── QUESTIONNAIRE ────
+  if (view === "questionnaire") {
+    const totalQ = 13;
+    const progress = (qStep / totalQ) * 100;
+    const vs = vinCheck(data.vin);
+    const canNext = () => {
+      if (qStep === 1) return data.name.trim().length > 0;
+      if (qStep === 2) return data.state.length > 0;
+      if (qStep === 3) { if (data.company === "Other / Not Sure") return data.companyOther.trim().length > 0 || data.companyOther === "UNKNOWN"; if (data.company === "Dealer-Sold Warranty") return data.dealerCompany.trim().length > 0 || data.dealerCompany === "UNKNOWN"; return data.company.length > 0; }
+      if (qStep === 4) { if (data.reason === "other") { if (!(data.reasonOther.trim().length > 0 || data.reasonOther === "UNKNOWN")) return false; } else if (!data.reason.length) return false; if (SCREEN_Q[data.reason] && !screenChoice) return false; return true; }
+      if (qStep === 5) return data.whatBroke.trim().length > 0;
+      if (qStep === 6) return data.amount.length > 0;
+      if (qStep === 7) return data.deniedDate.trim().length > 0;
+      if (qStep === 8) return data.rvType.length > 0;
+      return true;
+    };
+
+    const reviewFields = [
+      ["Name", data.name, 1], ["State", data.state, 2], ["Warranty Co.", coName(data), 3],
+      ["Denial Reason", (DENIAL_REASONS.find(r => r.id === data.reason)?.label || "") + (data.reason === "other" ? `: ${data.reasonOther}` : ""), 4],
+      ["What Failed", data.whatBroke, 5], ["Repair Amount", `$${Number(data.amount).toLocaleString()}`, 6],
+      ["Denied", fmtDate(data.deniedDate), 7], ["RV Type", data.rvType === "Other" ? data.rvTypeOther : data.rvType, 8],
+      ["RV", `${data.rvYear} ${data.rvMake} ${data.rvModel}`.trim() || "—", 10],
+      ["VIN", data.vin || "—", 10], ["Contract #", data.contractNum || "Will fill in later", 11],
+      ["Claim #", data.claimNum || "Will fill in later", 11],
+      ["Shop Visits", data.shopCount, 9], ["Photos", data.hasPhotos === "yes" ? "Yes" : data.hasPhotos === "no" ? "No" : "Not yet", 9]
+    ];
+
+    const Qs = {
+      1: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>What's your name?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>We'll use this in your appeal letter.</p><input style={inp} value={data.name} onChange={e => u("name", e.target.value)} placeholder="First and last name" autoFocus /></>,
+      2: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>What state do you live in?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>This affects your rights and where to report them.</p><select style={{ ...inp, background: C.white }} value={data.state} onChange={e => u("state", e.target.value)}><option value="">Pick your state</option>{STATES.map(s => <option key={s}>{s}</option>)}</select></>,
+      3: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>Who denied your claim?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>Pick the company that said no.</p><div style={{ maxHeight: 260, overflowY: "auto" }}>{WARRANTY_COS.map(c => <div key={c} style={optC(data.company === c)} onClick={() => u("company", c)}><span style={{ fontSize: 14, fontWeight: data.company === c ? 700 : 400 }}>{c}</span></div>)}</div>{data.company === "Other / Not Sure" && <><p style={{ fontSize: 13, color: C.navy, fontWeight: 600, margin: "12px 0 4px" }}>Look at the top of your denial letter or page 1 of your contract. The company name is there.</p><input style={inp} value={data.companyOther} onChange={e => u("companyOther", e.target.value)} placeholder="Company name on your contract" /><label style={{ display: "flex", gap: 8, marginTop: 8, fontSize: 13, color: C.mu, cursor: "pointer" }}><input type="checkbox" checked={data.companyOther === "UNKNOWN"} onChange={e => u("companyOther", e.target.checked ? "UNKNOWN" : "")} />I do not have it right now</label></>}{data.company === "Dealer-Sold Warranty" && <><p style={{ fontSize: 13, color: C.navy, fontWeight: 600, margin: "12px 0 4px" }}>What company name is on your actual contract? (Not the dealer, the warranty company.)</p><input style={inp} value={data.dealerCompany === "UNKNOWN" ? "" : data.dealerCompany} onChange={e => u("dealerCompany", e.target.value)} placeholder="e.g. American Guardian, Protective, etc." /><label style={{ display: "flex", gap: 8, marginTop: 8, fontSize: 13, color: C.mu, cursor: "pointer" }}><input type="checkbox" checked={data.dealerCompany === "UNKNOWN"} onChange={e => u("dealerCompany", e.target.checked ? "UNKNOWN" : "")} />I do not have it right now</label></>}</>,
+      4: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>Why did they deny your claim?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>Pick the one that sounds closest to what they told you.</p>{DENIAL_REASONS.map(r => <div key={r.id} style={optC(data.reason === r.id)} onClick={() => u("reason", r.id)}><div style={{ fontSize: 14, fontWeight: data.reason === r.id ? 700 : 600 }}>{r.label}</div><div style={{ fontSize: 13, color: C.mu, marginTop: 2 }}>{r.desc}</div></div>)}{data.reason === "other" && <><p style={{ fontSize: 13, color: C.navy, fontWeight: 600, margin: "12px 0 4px" }}>What reason did they give?</p><input style={inp} value={data.reasonOther === "UNKNOWN" ? "" : data.reasonOther} onChange={e => u("reasonOther", e.target.value)} placeholder="Type their exact reason, or check the box below" /><label style={{ display: "flex", gap: 8, marginTop: 8, fontSize: 13, color: C.mu, cursor: "pointer" }}><input type="checkbox" checked={data.reasonOther === "UNKNOWN"} onChange={e => u("reasonOther", e.target.checked ? "UNKNOWN" : "")} />I do not have it right now</label></>}
+        {SCREEN_Q[data.reason] && <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid #eee` }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: C.navy, margin: "0 0 10px" }}>{SCREEN_Q[data.reason].q}</p>
+          {SCREEN_Q[data.reason].options.map(o => <div key={o.v} style={optC(screenChoice === o.v)} onClick={() => setScreenChoice(o.v)}><div style={{ fontSize: 14 }}>{o.label}</div></div>)}
+        </div>}
+        {SCREEN_Q[data.reason] && screenChoice && SCREEN_Q[data.reason].options.find(o => o.v === screenChoice)?.flag && <div style={{ marginTop: 16 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: C.navy, margin: "0 0 8px" }}>Is there anything else about your situation you haven't mentioned yet? Sometimes a small detail changes everything.</p>
+          <textarea style={{ ...inp, minHeight: 70, resize: "vertical" }} value={data.moreDetails} onChange={e => u("moreDetails", e.target.value)} placeholder="Optional — anything that might matter" />
+        </div>}</>,
+      5: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>What broke or failed?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>Describe the problem in your own words. This goes into your appeal letter.</p><textarea style={{ ...inp, minHeight: 100, resize: "vertical" }} value={data.whatBroke} onChange={e => u("whatBroke", e.target.value)} placeholder="e.g. Slide-out motor stopped working. The slide won't retract. Shop confirmed motor failure." /></>,
+      6: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>How much is the repair?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>How much money is at stake?</p><div style={{ position: "relative" }}><span style={{ position: "absolute", left: 14, top: 13, color: C.mu }}>$</span><input style={{ ...inp, paddingLeft: 28 }} value={data.amount} onChange={e => u("amount", e.target.value.replace(/[^0-9.]/g, ""))} placeholder="5,000" /></div><div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>{["<1000", "1500", "3000", "5000", "8000", "12000", "20000", "30000", "40000+"].map(v => <button key={v} onClick={() => u("amount", v === "40000+" ? "40000" : v === "<1000" ? "500" : v)} style={{ background: (data.amount === v || (v === "40000+" && parseFloat(data.amount) >= 40000) || (v === "<1000" && data.amount === "500")) ? C.navy : "#f0f0f0", color: (data.amount === v || (v === "40000+" && parseFloat(data.amount) >= 40000) || (v === "<1000" && data.amount === "500")) ? C.white : "#555", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>{v === "40000+" ? "More than $40,000" : v === "<1000" ? "Under $1,000" : "$" + Number(v).toLocaleString()}</button>)}</div></>,
+      7: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>When were you denied?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>The date on your denial letter or email.</p><input type="date" style={inp} value={data.deniedDate} onChange={e => u("deniedDate", e.target.value)} max={new Date().toISOString().split("T")[0]} /></>,
+      8: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>What type of RV?</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>This matters for lemon law coverage.</p><div style={{ maxHeight: 300, overflowY: "auto" }}>{RV_TYPES.map(t => <div key={t} style={optC(data.rvType === t)} onClick={() => u("rvType", t)}><span style={{ fontSize: 14, fontWeight: data.rvType === t ? 700 : 400 }}>{t}</span></div>)}</div>{data.rvType === "Other" && <input style={{ ...inp, marginTop: 8 }} value={data.rvTypeOther} onChange={e => u("rvTypeOther", e.target.value)} placeholder="Describe your RV type" />}</>,
+      9: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>A few more details</h2>
+        <div style={{ marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Did you get the denial in writing?</span><div style={{ display: "flex", gap: 8, marginTop: 6 }}>{[["yes", "Yes"], ["no", "Not yet"]].map(([v, l]) => <div key={v} style={{ ...optC(data.denialWritten === v), flex: 1, textAlign: "center" }} onClick={() => u("denialWritten", v)}><span style={{ fontSize: 14 }}>{l}</span></div>)}</div></div>
+        <div style={{ marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Is your warranty still active?</span><div style={{ display: "flex", gap: 8, marginTop: 6 }}>{[["yes", "Yes"], ["no", "Expired"], ["unsure", "Not sure"]].map(([v, l]) => <div key={v} style={{ ...optC(data.warrantyActive === v), flex: 1, textAlign: "center" }} onClick={() => u("warrantyActive", v)}><span style={{ fontSize: 14 }}>{l}</span></div>)}</div>{data.warrantyActive === "no" && <p style={{ fontSize: 13, color: C.amber, marginTop: 8, fontWeight: 600 }}>💡 If the failure happened while your warranty was still active, your claim may still be valid even though the warranty has since expired.</p>}</div>
+        <div style={{ marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Was the repair pre-authorized?</span><div style={{ display: "flex", gap: 8, marginTop: 6 }}>{[["yes", "Yes"], ["no", "No"], ["unsure", "Not sure"]].map(([v, l]) => <div key={v} style={{ ...optC(data.preAuth === v), flex: 1, textAlign: "center" }} onClick={() => u("preAuth", v)}><span style={{ fontSize: 14 }}>{l}</span></div>)}</div></div>
+        <div style={{ marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>How many times in the shop for the same problem?</span><div style={{ display: "flex", gap: 8, marginTop: 6 }}>{["1", "2", "3", "4+"].map(v => <button key={v} onClick={() => u("shopCount", v)} style={{ background: data.shopCount === v ? C.navy : "#f0f0f0", color: data.shopCount === v ? C.white : "#555", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 14, cursor: "pointer", fontWeight: 600, flex: 1 }}>{v}</button>)}</div></div>
+        <div style={{ marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Do you have photos of the damage?</span><div style={{ display: "flex", gap: 8, marginTop: 6 }}>{[["yes", "Yes"], ["no", "No"], ["unsure", "Not yet"]].map(([v, l]) => <div key={v} style={{ ...optC(data.hasPhotos === v), flex: 1, textAlign: "center" }} onClick={() => u("hasPhotos", v)}><span style={{ fontSize: 14 }}>{l}</span></div>)}</div>{data.hasPhotos === "no" && <p style={{ fontSize: 13, color: C.amber, marginTop: 8 }}>💡 Take photos now if you can, even after repair. Photos strengthen your case.</p>}</div>
+        <div style={{ marginBottom: 0 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Do you have maintenance records?</span><div style={{ display: "flex", gap: 8, marginTop: 6 }}>{[["yes", "Some or all"], ["no", "None"], ["unsure", "Not sure"]].map(([v, l]) => <div key={v} style={{ ...optC(data.hasMaintenance === v), flex: 1, textAlign: "center" }} onClick={() => u("hasMaintenance", v)}><span style={{ fontSize: 14 }}>{l}</span></div>)}</div></div>
+      </>,
+      10: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>Your RV info</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>Goes in your appeal letter.</p>
+        <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Year</span><input style={{ ...inp, marginTop: 4 }} value={data.rvYear} onChange={e => u("rvYear", e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="e.g. 2022" /></label>
+        <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Make</span><input style={{ ...inp, marginTop: 4 }} value={data.rvMake} onChange={e => u("rvMake", e.target.value)} placeholder="e.g. Winnebago, Thor, Grand Design" /></label>
+        <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Model</span><input style={{ ...inp, marginTop: 4 }} value={data.rvModel} onChange={e => u("rvModel", e.target.value)} placeholder="e.g. Imagine 2800BH" /></label>
+        <label style={{ display: "block", marginBottom: 0 }}><span style={{ fontSize: 13, fontWeight: 600 }}>VIN{skip}</span><input style={{ ...inp, marginTop: 4 }} value={data.vin} onChange={e => u("vin", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17))} placeholder="17 characters, no I O or Q" maxLength={17} />{vs && <p style={{ fontSize: 12, color: vs.ok ? C.forest : C.amber, marginTop: 4, fontWeight: 600 }}>{vs.ok ? "✓" : "⚠"} {vs.msg}</p>}</label>
+      </>,
+      11: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>Contract and claim numbers</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>Find these on your contract and denial letter.</p>
+        <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Contract or policy number{skip}</span><input style={{ ...inp, marginTop: 4 }} value={data.contractNum} onChange={e => u("contractNum", e.target.value)} placeholder="e.g. RVW-123456" /></label>
+        <label style={{ display: "block", marginBottom: 0 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Claim number{skip}</span><input style={{ ...inp, marginTop: 4 }} value={data.claimNum} onChange={e => u("claimNum", e.target.value)} placeholder="e.g. CLM-78901" /></label>
+      </>,
+      12: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>Your contact info</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>Goes at the bottom of your letters.</p>
+        <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Mailing address{skip}</span><input style={{ ...inp, marginTop: 4 }} value={data.address} onChange={e => u("address", e.target.value)} placeholder="123 Main St, City, ST 12345" /></label>
+        <label style={{ display: "block", marginBottom: 14 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Phone{skip}</span><input style={{ ...inp, marginTop: 4 }} value={data.phone} onChange={e => u("phone", e.target.value)} placeholder="(555) 123-4567" type="tel" /></label>
+        <label style={{ display: "block", marginBottom: 0 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Email{skip}</span><input style={{ ...inp, marginTop: 4 }} value={data.email} onChange={e => u("email", e.target.value)} placeholder="you@email.com" type="email" /></label>
+      </>,
+      13: <><h2 style={{ fontSize: 20, fontWeight: 700, color: C.navy, margin: "0 0 4px" }}>Review everything</h2><p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>Make sure it all looks right. Tap "edit" to fix anything.</p>
+        <div style={{ background: C.lNav, borderRadius: 12, padding: 16, fontSize: 14 }}>
+          {reviewFields.map(([label, val, step], i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #dde5ef", padding: "6px 0" }}>
+              <div><span style={{ fontWeight: 700, color: C.navy }}>{label}: </span><span>{val || "—"}</span></div>
+              <button onClick={() => go(setQStep,step)} style={{ background: "none", border: "none", color: C.amber, fontSize: 12, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>edit</button>
+            </div>
+          ))}
+        </div>
+      </>
+    };
+
+    if (showFlag) return (<div style={{ background: C.cream, minHeight: "100vh", padding: "24px 16px" }}><div style={wrap}>
+      <div style={card}>
+        <h2 style={{ fontSize: 19, fontWeight: 800, color: C.navy, margin: "0 0 10px" }}>Before you continue</h2>
+        <p style={{ fontSize: 14, margin: "0 0 12px", lineHeight: 1.6 }}>Based on what you've told us so far, this denial reason may hold up — some claims genuinely aren't covered, and we'd rather tell you that honestly than take your money for a fight you probably won't win.</p>
+        <p style={{ fontSize: 14, margin: "0 0 16px", lineHeight: 1.6, color: C.mu }}>That said, you know your situation better than a few dropdown answers can capture. If there's more to it, go back and add it. Otherwise, it's your call whether to continue.</p>
+        <Btn onClick={() => { setShowFlag(false); go(setQStep, qStep); }} style={{ marginBottom: 10 }}>Go Back & Add More Detail</Btn>
+        <button onClick={() => { setShowFlag(false); go(setQStep, qStep + 1); }} style={{ width: "100%", background: "none", border: `1px solid ${C.navy}`, color: C.navy, borderRadius: 12, padding: "13px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Continue Anyway</button>
+      </div>
+    </div></div>);
+
+    return (<div style={{ background: C.cream, minHeight: "100vh", padding: "24px 16px" }}><div style={wrap}>
+      <Back onClick={() => qStep === 1 ? go(setView,"value") : go(setQStep,qStep - 1)} />
+      <div style={{ height: 6, background: "#e4e4e4", borderRadius: 3, marginBottom: 6, overflow: "hidden" }}><div style={{ height: "100%", background: `linear-gradient(90deg,${C.navy},${C.amber})`, borderRadius: 3, transition: "width 0.4s", width: `${progress}%` }} /></div>
+      <p style={{ fontSize: 12, color: C.mu, margin: "0 0 16px", textAlign: "right" }}>Step {qStep} of {totalQ}</p>
+      <div style={card}>{Qs[qStep]}<div style={{ marginTop: 16 }}><Btn onClick={() => {
+        const flagged = SCREEN_Q[data.reason] && SCREEN_Q[data.reason].options.find(o => o.v === screenChoice)?.flag;
+        if (qStep === 4 && flagged && !data.moreDetails.trim()) { setShowFlag(true); return; }
+        if (qStep === totalQ) return go(setView,"results");
+        if (qStep === 5) return go(setView,"payment");
+        go(setQStep, qStep + 1);
+      }} disabled={!canNext()}>{qStep === totalQ ? "Build My Appeal & Get Me Paid!" : "Next"}</Btn></div></div>
+    </div></div>);
+  }
+
+  // ──── RESULTS ────
+  if (view === "results") {
+    const dl = deadlineWarn(data.deniedDate);
+    const steps = getSteps(data);
+    const lemonFlag = parseInt(data.shopCount) >= 3;
+
+    const printAll = () => {
+      const appeal = genAppealLetter(data).replace(/%%([^%]+)%%/g, "______$1______");
+      const commish = genCommissionerLetter(data).replace(/%%([^%]+)%%/g, "______$1______");
+      const bbb = genBBBLetter(data).replace(/%%([^%]+)%%/g, "______$1______");
+      const stepsText = steps.map(s => `STEP ${s.n}: ${s.t}\n${s.w}\n${s.desc}\nTip: ${s.tip}`).join("\n\n---\n\n");
+      const cl = data.claimNum || "N/A";
+      const w = window.open("", "_blank");
+      w.document.write(`<!DOCTYPE html><html><head><title>RV Warranty Bust - Complete Fight Plan</title><style>@page{size:letter;margin:0.75in 1in;}body{font-family:"Times New Roman",serif;font-size:11pt;line-height:1.45;color:#000;margin:0;padding:0;}h2{font-family:Arial,sans-serif;font-size:14pt;border-bottom:2px solid #1b3a5c;padding-bottom:4px;margin-top:2em;page-break-before:always;}h2:first-of-type{page-break-before:auto;}pre{white-space:pre-wrap;font-family:"Times New Roman",serif;font-size:11pt;}.footer{font-size:8pt;color:#888;text-align:center;margin-top:3em;border-top:1px solid #ccc;padding-top:4px;}</style></head><body><h2>APPEAL LETTER</h2><pre>${appeal}</pre><h2>STATE INSURANCE COMMISSIONER COMPLAINT</h2><pre>${commish}</pre><h2>BBB COMPLAINT</h2><pre>${bbb}</pre><h2>ESCALATION PLAN</h2><pre>${stepsText}</pre><div class="footer">Claim #${cl} | RV Warranty Bust | rvwarrantybust.com | This is educational guidance, not legal advice.</div></body></html>`);
+      w.document.close(); w.print();
+    };
+
+    return (<div style={{ background: C.cream, minHeight: "100vh", padding: "24px 16px" }}><div style={wrap}>
+      <Back onClick={() => { go(setView,"questionnaire"); setQStep(13); }} label="Back to Review" />
+      <div style={{ textAlign: "center", marginBottom: 16 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: C.navy, margin: "4px 0" }}>Your Fight Plan is Ready</h1>
+        <p style={{ fontSize: 14, color: C.mu, margin: 0 }}>Built for {data.name} in {data.state} | {coName(data)} | Claim: {data.claimNum || "TBD"}</p>
+      </div>
+
+      <button onClick={printAll} style={{ background: C.navy, color: C.white, border: "none", borderRadius: 10, padding: "14px 24px", fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%", marginBottom: 16 }}>Print Complete Fight Plan</button>
+
+      {dl && <div style={{ background: dl.urgent ? C.dangerBg : C.lFor, border: `1px solid ${dl.urgent ? "#fca5a5" : "#86d4a0"}`, borderRadius: 12, padding: 16, marginBottom: 16 }}><p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: dl.urgent ? C.danger : C.forest }}>⏱️ {dl.text}</p></div>}
+
+      {data.denialWritten === "no" && <div style={{ ...card, background: C.lAmb, borderLeft: `4px solid ${C.amber}` }}><h3 style={{ margin: "0 0 4px", fontSize: 15, color: C.amber }}>First thing first</h3><p style={{ margin: 0, fontSize: 14 }}>Call the warranty company and ask them to send the denial in writing with the specific contract language they're citing. You need this document before you send your appeal.</p></div>}
+
+      {lemonFlag && <div style={{ ...card, background: C.lFor, borderLeft: `4px solid ${C.forest}` }}><h3 style={{ margin: "0 0 4px", fontSize: 15, color: C.forest }}>🍋 Lemon Law Alert</h3><p style={{ margin: 0, fontSize: 14 }}>Your RV has been in the shop {data.shopCount} times for the same issue. This may qualify under lemon law protections. Consider contacting a lemon law attorney. Many take these cases for free because the manufacturer pays their fees if you win.</p></div>}
+
+      <div style={card}><DocCheck data={data} onChange={(k, v) => u(k, v)} /></div>
+
+      {/* LETTER BUTTONS */}
+      <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
+        <button onClick={() => go(setLetterView,"appeal")} style={{ ...card, marginBottom: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, borderLeft: `4px solid ${C.amber}` }}>
+          <span style={{ fontSize: 24 }}>📄</span>
+          <div><h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.navy }}>Write My Appeal Letter</h3><p style={{ margin: "2px 0 0", fontSize: 13, color: C.mu }}>Your custom appeal, ready to copy, print, or email</p></div>
+        </button>
+        <button onClick={() => go(setLetterView,"commissioner")} style={{ ...card, marginBottom: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, borderLeft: `4px solid ${C.forest}` }}>
+          <span style={{ fontSize: 24 }}>📋</span>
+          <div><h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.navy }}>Write My Commissioner Complaint</h3><p style={{ margin: "2px 0 0", fontSize: 13, color: C.mu }}>Pre-filled complaint to your state's Department of Insurance</p></div>
+        </button>
+        <button onClick={() => go(setLetterView,"bbb")} style={{ ...card, marginBottom: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, borderLeft: `4px solid ${C.navy}` }}>
+          <span style={{ fontSize: 24 }}>📝</span>
+          <div><h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.navy }}>Write My BBB Complaint</h3><p style={{ margin: "2px 0 0", fontSize: 13, color: C.mu }}>Pre-filled Better Business Bureau complaint</p></div>
+        </button>
+      </div>
+
+      {/* ESCALATION */}
+      <div style={card}>
+        <h2 style={{ fontSize: 17, fontWeight: 700, color: C.navy, margin: "0 0 16px" }}>Your Step-by-Step Escalation Plan</h2>
+        <p style={{ fontSize: 14, color: C.mu, margin: "0 0 16px" }}>Follow these in order. Most denials get overturned by Step 3 or 4.</p>
+        {steps.map((s, i) => <div key={i} style={{ borderLeft: `3px solid ${C.amber}`, paddingLeft: 16, marginBottom: 22 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}><span style={{ background: C.navy, color: C.white, width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{s.n}</span><h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{s.t}</h3></div>
+          <div style={{ fontSize: 12, color: C.amber, fontWeight: 700, margin: "4px 0 8px" }}>{s.w}</div>
+          <p style={{ fontSize: 14, color: "#555", margin: "0 0 8px", whiteSpace: "pre-line" }}>{s.desc}</p>
+          <div style={{ background: C.lAmb, borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#7c5a10" }}>💡 {s.tip}</div>
+        </div>)}
+      </div>
+
+      {/* RULES */}
+      <div style={{ ...card, background: C.lNav }}>
+        <h2 style={{ fontSize: 17, fontWeight: 700, color: C.navy, margin: "0 0 12px" }}>Remember These</h2>
+        {["Everything in writing. Phone calls are for pressure. Letters are for proof.", "Certified mail with return receipt. Every single time.", "Stay calm and factual. Never emotional. Never threatening.", "They changed their excuse? Good. That means their first reason was weak.", "Modifications don't automatically void your warranty. They must prove YOUR change caused THIS failure.", "Missing maintenance records doesn't kill your case. They must prove YOUR missed upkeep caused THIS specific breakdown.", "The Magnuson-Moss Warranty Act means if you win, they may pay your attorney fees. Mention it by name."].map((t, i) => <div key={i} style={{ display: "flex", gap: 10, padding: "5px 0", fontSize: 14, color: "#444" }}><span style={{ color: C.amber, fontWeight: 800, flexShrink: 0 }}>→</span><span>{t}</span></div>)}
+      </div>
+
+      <p style={{ fontSize: 11, color: "#bbb", textAlign: "center", margin: "24px auto", maxWidth: 500 }}>RV Warranty Bust helps RV owners understand and navigate the warranty dispute process. We are not attorneys and this is not legal advice. We do not guarantee outcomes. We guarantee you will have every tool to fight as hard as possible. If your situation needs legal representation, we point you to the right resources, including federal laws that may require the warranty company to cover your attorney fees.</p>
+      <Btn variant="secondary" onClick={() => { go(setView,"landing"); setQStep(1); }}>Start Over</Btn>
+    </div></div>);
+  }
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RV Warranty Bust — We get you paid.</title>
+<meta name="description" content="Nearly half of warranty claims are denied. Almost nobody fights back. Answer a few simple questions. Get your complete fight plan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1b3a5c;
+    --amber:#e8941b;
+    --amberDk:#c67a0e;
+    --forest:#2d5a3d;
+    --cream:#faf8f4;
+    --white:#fff;
+    --ch:#2a2a2a;
+    --mu:#7a7a7a;
+    --lNav:#eef3f8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--cream);
+    font-family:'Inter', -apple-system, system-ui, sans-serif;
+    color:var(--ch);
+    line-height:1.65;
+  }
+  .wrap{width:92%;max-width:1400px;margin:0 auto;}
+  .hero .wrap{width:92%;max-width:1100px;}
+  .road{height:4px;background:repeating-linear-gradient(90deg,var(--amber) 0px,var(--amber) 40px,transparent 40px,transparent 80px);margin:28px 0;border-radius:2px;opacity:0.5;}
+  .top-bar{background:var(--navy);padding:14px 0;border-bottom:4px solid var(--amber);}
+  .top-bar .wrap{text-align:center;padding:0 16px;}
+  .top-bar .shield{font-size:26px;}
+  .top-bar .name{color:var(--white);font-weight:800;font-size:22px;margin-top:4px;}
+  .top-bar .name span{color:var(--amber);}
+  .top-bar .tag{color:var(--amber);font-size:14px;font-weight:700;font-style:italic;margin-top:2px;}
+  .hero{background:linear-gradient(135deg,var(--navy) 0%,#244b6e 100%);padding:44px 16px 40px;position:relative;}
+  .hero .wrap{text-align:center;padding:0 16px;}
+  .hero .eyebrow{color:var(--amber);font-size:15px;font-weight:700;margin:0 0 8px;letter-spacing:0.5px;}
+  .hero h1{color:var(--white);font-size:clamp(22px,5vw,32px);font-weight:800;line-height:1.2;margin:0 0 14px;}
+  .hero .lead{color:#c0d0e0;font-size:15px;margin:0 0 8px;max-width:500px;margin-left:auto;margin-right:auto;}
+  .hero .zinger{color:var(--amber);font-size:17px;font-weight:800;margin:0 0 6px;}
+  .hero .sub{color:#8fa8c2;font-size:13px;margin:0 0 24px;}
+  .btn{
+    display:inline-block;
+    background:var(--amber);
+    color:var(--navy);
+    text-decoration:none;
+    border:none;
+    border-radius:10px;
+    padding:16px 32px;
+    font-size:16px;
+    font-weight:800;
+    cursor:pointer;
+    width:100%;
+    max-width:320px;
+    text-align:center;
+    font-family:inherit;
+  }
+  .btn:hover{background:var(--amberDk);color:var(--white);}
+  .hero .mission{color:#8fa8c2;font-size:12px;margin-top:14px;font-style:italic;}
+  .content{padding:36px 16px;}
+  .card{background:var(--white);border-radius:16px;padding:24px 20px;box-shadow:0 2px 16px rgba(0,0,0,0.06);margin-bottom:20px;}
+  .card p{font-size:16px;margin:0 0 12px;}
+  .card p:last-child{margin-bottom:0;}
+  .card .strong{font-weight:700;color:var(--navy);}
+  .shead{font-size:13px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:1.5px;margin:0 0 6px;}
+  .h2{font-size:20px;font-weight:800;color:var(--navy);margin:0 0 16px;}
+  .feature-grid{display:grid;gap:16px;grid-template-columns:1fr 1fr;}
+  @media(min-width:700px){
+    .content{padding:36px 0;}
+  }
+  @media(min-width:1100px){
+    .feature-grid{grid-template-columns:1fr 1fr 1fr;}
+  }
+  .feature{background:var(--white);border-radius:16px;padding:20px;box-shadow:0 2px 16px rgba(0,0,0,0.06);display:flex;gap:14px;align-items:flex-start;}
+  .feature .icon{font-size:22px;flex-shrink:0;margin-top:2px;}
+  .feature h3{margin:0 0 3px;font-size:14px;font-weight:700;}
+  .feature p{margin:0;font-size:13px;color:var(--mu);}
+  .note-box{margin-top:16px;padding:14px;background:var(--lNav);border-radius:12px;text-align:center;}
+  .note-box p{margin:0;font-size:14px;font-weight:600;color:var(--navy);}
+  .tools-grid{display:grid;gap:12px;grid-template-columns:1fr;}
+  .tool-card{background:var(--white);border-radius:16px;padding:24px 20px;box-shadow:0 2px 16px rgba(0,0,0,0.06);text-align:center;text-decoration:none;color:inherit;}
+  .tool-card.lemon{border-top:4px solid var(--forest);}
+  .tool-card.class{border-top:4px solid var(--navy);}
+  .tool-card .ticon{font-size:26px;}
+  .tool-card h3{font-size:14px;font-weight:700;margin:6px 0 2px;}
+  .tool-card.lemon h3{color:var(--forest);}
+  .tool-card.class h3{color:var(--navy);}
+  .tool-card p{font-size:12px;color:var(--mu);margin:0;}
+  .fine-print{font-size:11px;color:#bbb;text-align:center;max-width:500px;margin:0 auto;}
+  .value-section{padding:24px 16px;}
+  .value-title{text-align:center;margin-bottom:24px;}
+  .value-title .shield{font-size:32px;}
+  .value-title h2{font-size:24px;font-weight:800;color:var(--navy);margin:8px 0;}
+  .checklist{margin:0;}
+  .checklist h3{font-size:16px;font-weight:700;color:var(--navy);margin:0 0 12px;}
+  .checklist .item{display:flex;gap:10px;padding:5px 0;font-size:14px;}
+  .checklist .item .check{color:var(--forest);font-weight:800;}
+  .price-card{background:var(--navy);color:var(--white);text-align:center;padding:28px;border-radius:16px;}
+  .price-card .attorney{margin:0 0 6px;font-size:14px;color:#8fa8c2;}
+  .price-card .amount{margin:0 0 2px;font-size:44px;font-weight:900;color:var(--amber);}
+  .price-card .terms{margin:0 0 20px;font-size:15px;color:#c0d0e0;}
+  footer{width:92%;max-width:1400px;margin:20px auto 0;padding:16px 0;border-top:1px solid #e4e0d6;font-size:13px;color:#999;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  footer a{color:#999;text-decoration:none;}
+  footer a:hover{color:var(--navy);}
+  @media(max-width:600px){
+    footer{flex-direction:column;text-align:center;}
+    .feature-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="wrap">
+    <div class="name">RV Warranty <span>Bust</span></div>
+    <div class="tag">We get you paid.</div>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Did you know...</p>
+    <h1>Nearly half of warranty claims are denied. Almost nobody fights back!</h1>
+    <p class="lead">Why? Because most people don't know how to overturn a denial. They think they need a lawyer. They feel overwhelmed. They give up.</p>
+    <p class="zinger">That's where we come in.</p>
+    <p class="sub">You paid for protection. Now make them honor it.</p>
+    <a href="#appeal" class="btn">Let's Get You Paid!</a>
+    <p class="mission">Our mission: help more RV owners fight back and get what they already paid for.</p>
+  </div>
+</div>
+
+<div class="wrap content">
+  <div class="card">
+    <p>Your claim was denied. Maybe they called it "wear and tear." Maybe "pre-existing condition." Maybe they said the part isn't covered or you didn't get permission first.</p>
+    <p class="strong">No matter what reason they gave you, there's a process to challenge it.</p>
+    <p>Federal law. State law. And a system built to hold them accountable.</p>
+  </div>
+
+  <div class="road"></div>
+
+  <p class="shead">What you get</p>
+  <h2 class="h2">Answer a few simple questions. Get your complete fight plan.</h2>
+  <div class="feature-grid">
+    <div class="feature"><span class="icon">📄</span><div><h3>Custom Appeal Letter</h3><p>Written for YOUR denial, with claims department and legal language that gets results. Ready to print and send.</p></div></div>
+    <div class="feature"><span class="icon">📋</span><div><h3>Commissioner Complaint Letter</h3><p>Pre-filled complaint to your state's Department of Insurance. This is what makes warranty companies nervous.</p></div></div>
+    <div class="feature"><span class="icon">📝</span><div><h3>BBB Complaint Letter</h3><p>Pre-filled Better Business Bureau complaint. One more layer of pressure.</p></div></div>
+    <div class="feature"><span class="icon">📞</span><div><h3>Exactly Who to Contact</h3><p>The right people to reach, what to say word for word, and when to say it.</p></div></div>
+    <div class="feature"><span class="icon">📍</span><div><h3>Your State's Complaint Contacts</h3><p>Exactly where to report them so they take you seriously.</p></div></div>
+    <div class="feature"><span class="icon">🍋</span><div><h3>Free Lemon Law Check</h3><p>See if your RV qualifies for a full buyback or replacement.</p></div></div>
+    <div class="feature"><span class="icon">⚖️</span><div><h3>Free Class Action Check</h3><p>See if your RV is part of an active lawsuit you might not know about.</p></div></div>
+    <div class="feature"><span class="icon">🛡️</span><div><h3>The Laws Warranty Companies Don't Want You to Know</h3><p>Federal and state laws protect you. We know them. And we put them to work in your appeal letter.</p></div></div>
+  </div>
+
+  <div class="note-box">
+    <p>This is not a generic template. Everything is built around your answers. Your denial. Your state. Your warranty company.</p>
+  </div>
+
+  <div class="road"></div>
+
+  <p class="shead">Free tools</p>
+  <div class="tools-grid">
+    <a href="/start.html?view=lemon" class="tool-card lemon"><span class="ticon">🍋</span><h3>Lemon Law Check</h3><p>Free in 60 seconds</p></a>
+    <a href="/start.html?view=classaction" class="tool-card class"><span class="ticon">⚖️</span><h3>Class Action Check</h3><p>Free in 60 seconds</p></a>
+  </div>
+
+  <div class="road"></div>
+
+  <div class="card" style="background:#fef7eb;text-align:center;">
+    <h3 style="margin:0 0 4px;font-size:16px;font-weight:800;color:var(--navy);">Get the free RV Warranty Denial Checklist</h3>
+    <p style="margin:0 0 14px;font-size:13px;color:var(--mu);">The 7 things to do the moment your claim gets denied. No spam, just useful stuff.</p>
+    <form id="listForm" style="display:flex;gap:8px;max-width:400px;margin:0 auto;" onsubmit="return submitListForm(event)">
+      <input type="email" id="listEmail" required placeholder="you@email.com" style="flex:1;padding:13px 14px;border-radius:10px;border:1px solid #ddd;font-size:16px;font-family:inherit;">
+      <button type="submit" id="listBtn" style="background:var(--amber);color:var(--navy);border:none;border-radius:10px;padding:0 20px;font-weight:800;font-size:14px;cursor:pointer;">Get It</button>
+    </form>
+    <p id="listMsg" style="display:none;margin:0;font-size:14px;color:var(--forest);font-weight:700;">✓ You're on the list. Checklist coming to your inbox.</p>
+  </div>
+
+  <div class="road"></div>
+
+  <p class="fine-print">RV Warranty Bust helps RV owners understand and navigate the warranty dispute process. We are not attorneys and this is not legal advice. We do not guarantee outcomes. We guarantee you will have every tool to fight as hard as possible. If your situation needs legal representation, we point you to the right resources, including federal laws that may require the warranty company to cover your attorney fees.</p>
+</div>
+
+<script>
+async function submitListForm(e) {
+  e.preventDefault();
+  const email = document.getElementById("listEmail").value;
+  const btn = document.getElementById("listBtn");
+  btn.textContent = "...";
+  btn.disabled = true;
+  try {
+    await fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_key: "478f9ae1-6bb7-41c6-82cd-a13fabe97716", subject: "New Email List Signup", email: email })
+    });
+  } catch (err) {}
+  document.getElementById("listForm").style.display = "none";
+  document.getElementById("listMsg").style.display = "block";
+  return false;
+}
+</script>
+
+<div class="wrap value-section" id="appeal">
+  <div class="value-title">
+    <h2>Your Complete Fight Plan</h2>
+  </div>
+  <div class="card checklist">
+    <h3>Here's what you're getting:</h3>
+    <div class="item"><span class="check">✓</span><span>Custom appeal letter tailored to your exact denial reason</span></div>
+    <div class="item"><span class="check">✓</span><span>State insurance commissioner complaint letter, pre-filled</span></div>
+    <div class="item"><span class="check">✓</span><span>BBB complaint letter, pre-filled</span></div>
+    <div class="item"><span class="check">✓</span><span>Step-by-step escalation plan with exact scripts</span></div>
+    <div class="item"><span class="check">✓</span><span>Free lemon law qualification check</span></div>
+    <div class="item"><span class="check">✓</span><span>Free class action check</span></div>
+    <div class="item"><span class="check">✓</span><span>Federal and state law references loaded into every letter</span></div>
+    <div class="item"><span class="check">✓</span><span>Document checklist so nothing gets missed</span></div>
+  </div>
+  <div class="price-card">
+    <p class="attorney">A consumer protection attorney charges $200 to $500 an hour just to talk.</p>
+    <p class="amount">$97</p>
+    <p class="terms">One time. No matter how big your claim.</p>
+    <a href="/start.html" class="btn" style="max-width:none;">Start My Appeal</a>
+  </div>
+</div>
+
+<footer>
+  <span>RV Warranty Bust — rvwarrantybust.com</span>
+  <span><a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms of Use</a> · <a href="/refunds.html">Refund Policy</a></span>
+</footer>
+
+</body>
+</html>
